@@ -20,4 +20,3 @@ Stages:
 
 
 Note: I wonder if Llava is able to analyse graphs
-
