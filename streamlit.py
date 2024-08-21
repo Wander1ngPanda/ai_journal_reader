@@ -6,7 +6,7 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains import create_retrieval_chain
 from langchain_community.vectorstores import FAISS
 from dotenv import load_dotenv
-from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyPDFDirectoryLoader
 import tempfile
 import os
 
@@ -17,21 +17,8 @@ if 'llm' not in st.session_state:
     st.session_state['llm'] = ChatOpenAI(api_key=api_key)
 if 'embeddings' not in st.session_state:
     st.session_state['embeddings'] = OpenAIEmbeddings(api_key=api_key)
-
-files = st.file_uploader(label='Upload a PDF', type='pdf', accept_multiple_files=True)
-
-if 'vector' not in st.session_state and files:
-    temp_dir = tempfile.mkdtemp()
-    for data in files:
-        path = os.path.join(temp_dir, data.name)
-        with open(path, "wb") as f:
-                f.write(data.getvalue())
-    loader = PyPDFLoader(path)
-    docs = loader.load()
-    text_splitter = RecursiveCharacterTextSplitter()
-    documents = text_splitter.split_documents(docs)
-    print('Im embedding')
-    st.session_state.vector = FAISS.from_documents(documents, st.session_state.embeddings)
+if 'vector' not in st.session_state:
+    st.session_state['vector'] = None
 
 
 
@@ -48,19 +35,29 @@ def generate_response(user_input):
     retriever = st.session_state.vector.as_retriever()
     retrieval_chain = create_retrieval_chain(retriever, document_chain)
     response = retrieval_chain.invoke({"input": user_input})
-    return response["answer"]
+    st.info(response["answer"])
 
-if 'messages' not in st.session_state:
-    st.session_state.messages = []
+
+files = st.file_uploader(label='Upload a PDF', type='pdf', accept_multiple_files=True)
 
 if files:
-        chat = st.chat_input()
-        if chat:
-            st.session_state.messages.append(('User', chat))
-            for user, message in st.session_state.messages:
-                    st.chat_message(user).write(message)
+        temp_dir = tempfile.mkdtemp()
+        for data in files:
+            path = os.path.join(temp_dir, data.name)
+            with open(path, "wb") as f:
+                    f.write(data.getvalue())
+        loader = PyPDFDirectoryLoader(temp_dir)
+        docs = loader.load()
+        text_splitter = RecursiveCharacterTextSplitter()
+        documents = text_splitter.split_documents(docs)
+        st.session_state.vector = FAISS.from_documents(documents, st.session_state.embeddings)
+
+        with st.form("my_form"):
+            text = st.text_area("Enter text:")
+            submitted = st.form_submit_button("Submit")
+            if submitted:
+                generate_response(text)
 
 
-            st.session_state.messages.append(('Ai', generate_response(chat)))
-            user, message = st.session_state.messages[-1]
-            st.chat_message(user).write(message)
+
+

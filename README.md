@@ -20,3 +20,19 @@ Stages:
 
 
 Note: I wonder if Llava is able to analyse graphs
+
+
+Note, Next project idea. Use a Kaggle dataset and a postgres database. Enable natural language sql queries. How can this be tested. How can it be broken.
+
+
+
+
+Current Stage:
+- I have a basic app that allows me to make one query at a time
+
+Next Goal
+- CUrrently breaks if a file isnt loaded
+- Add code to either lock the typing field or hide the field until a file is loaded
+- Enable multiple queries without re embedding the dataset
+    - Computationally expensive, Llama3 can interact fast locally but is slow to embed. Wouldnt be a problem to embed first and then use an llm with the new vecor stuff
+
